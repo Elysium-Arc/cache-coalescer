@@ -7,6 +7,12 @@ Cache Coalescer ensures only one request computes a missing value while the rest
 
 This is ideal for expensive cache-miss work such as API calls, report generation, or heavyweight database queries.
 
+## Use Cases
+- Prevent thundering herds on cold cache keys
+- Reduce p99 latency spikes during traffic bursts
+- Protect downstream services from request stampedes
+- Coalesce expensive fan-out workloads into a single computation
+
 ## Compatibility
 - Ruby 3.0+
 - ActiveSupport 6.1+
