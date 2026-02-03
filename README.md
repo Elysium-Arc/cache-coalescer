@@ -1,7 +1,10 @@
 # Cache Coalescer
 
 [![Gem Version](https://img.shields.io/gem/v/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
+[![Gem Downloads](https://img.shields.io/gem/dt/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
+[![CI](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/Elysium-Arc/cache-coalescer.svg)](https://github.com/Elysium-Arc/cache-coalescer/releases)
+[![Rails](https://img.shields.io/badge/rails-6.x%20%7C%207.x%20%7C%208.x-cc0000.svg)](https://rubyonrails.org)
 
 Distributed singleflight for Rails cache misses to prevent stampedes on cold keys.
 
