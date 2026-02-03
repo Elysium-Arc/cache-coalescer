@@ -2,7 +2,6 @@
 
 [![Gem Version](https://img.shields.io/gem/v/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
 [![Gem Downloads](https://img.shields.io/gem/dt/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
-[![Gem Downloads (Monthly)](https://img.shields.io/gem/dm/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
 [![Ruby](https://img.shields.io/badge/ruby-3.0%2B-cc0000.svg)](https://www.ruby-lang.org)
 [![CI](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/Elysium-Arc/cache-coalescer.svg)](https://github.com/Elysium-Arc/cache-coalescer/releases)
@@ -27,6 +26,13 @@ This is ideal for expensive cache-miss work such as API calls, report generation
 - ActiveSupport 6.1+
 - Works with any ActiveSupport cache store
 - Best with Redis-backed stores for distributed locking
+
+## Elysium Arc Reliability Toolkit
+Also check out these related gems:
+- Cache SWR: https://github.com/Elysium-Arc/cache-swr
+- Faraday Hedge: https://github.com/Elysium-Arc/faraday-hedge
+- Rack Idempotency Kit: https://github.com/Elysium-Arc/rack-idempotency-kit
+- Env Contract: https://github.com/Elysium-Arc/env-contract
 
 ## Installation
 ```ruby
