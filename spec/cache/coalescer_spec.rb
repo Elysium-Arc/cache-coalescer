@@ -145,11 +145,23 @@ RSpec.describe Cache::Coalescer do
     lock.acquire("cache-coalescer:lock:key", "token", 1)
     store.write("cache-coalescer:stale:key", "stale")
 
-    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, stale_ttl: 60) do
-      "fresh"
-    end
+    fresh_block = proc { "fresh" }
+    fresh_block.call
+    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, stale_ttl: 60, &fresh_block)
 
     expect(value).to eq("stale")
+  end
+
+  it "returns nil when stale_ttl is set but no stale value exists" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    lock = Cache::Coalescer::Lock::InMemoryLock.new
+    lock.acquire("cache-coalescer:lock:key", "token", 1)
+
+    value_block = proc { "value" }
+    value_block.call
+    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, stale_ttl: 60, &value_block)
+
+    expect(value).to be_nil
   end
 
   it "returns nil when lock is held and no stale value exists" do
@@ -157,9 +169,9 @@ RSpec.describe Cache::Coalescer do
     lock = Cache::Coalescer::Lock::InMemoryLock.new
     lock.acquire("cache-coalescer:lock:key", "token", 1)
 
-    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01) do
-      "value"
-    end
+    value_block = proc { "value" }
+    value_block.call
+    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, &value_block)
 
     expect(value).to be_nil
   end
@@ -171,6 +183,15 @@ RSpec.describe Cache::Coalescer do
     described_class.fetch("key", ttl: 1, store: store, lock_client: lock, stale_ttl: 10) { "value" }
 
     expect(store.read("cache-coalescer:stale:key")).to eq("value")
+  end
+
+  it "skips lock release when lock_client is nil" do
+    store = ActiveSupport::Cache::MemoryStore.new
+
+    value = described_class.compute_and_store(store, "key", 1, nil, nil, "lock", "token") { "value" }
+
+    expect(value).to eq("value")
+    expect(store.read("key")).to eq("value")
   end
 
   it "uses default redis lock when store exposes redis" do
@@ -218,11 +239,20 @@ RSpec.describe Cache::Coalescer::Lock do
     lock = Cache::Coalescer::Lock::RedisLock.new(redis)
 
     expect(lock.acquire("key", "token", 1)).to eq(true)
+    expect(lock.acquire("key", "token", 1)).to eq(false)
     expect(lock.release("key", "token")).to eq(1)
   end
 
+  it "returns 0 when release token does not match" do
+    redis = CoalescerSpecRedis.new
+    lock = Cache::Coalescer::Lock::RedisLock.new(redis)
+
+    lock.acquire("key", "token", 1)
+    expect(lock.release("key", "other")).to eq(0)
+  end
+
   it "uses #with when available" do
-    redis = FakeRedis.new
+    redis = CoalescerSpecRedis.new
     lock = Cache::Coalescer::Lock::RedisLock.new(RedisWith.new(redis))
 
     expect(lock.acquire("key", "token", 1)).to eq(true)
@@ -231,6 +261,11 @@ RSpec.describe Cache::Coalescer::Lock do
   it "returns false when release fails" do
     lock = Cache::Coalescer::Lock::RedisLock.new(ErrorRedis.new)
     expect(lock.release("key", "token")).to eq(false)
+  end
+
+  it "acquires when redis responds to set" do
+    lock = Cache::Coalescer::Lock::RedisLock.new(ErrorRedis.new)
+    expect(lock.acquire("key", "token", 1)).to eq(true)
   end
 
   it "in-memory lock respects ttl" do

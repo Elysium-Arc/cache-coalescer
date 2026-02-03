@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "active_support/notifications"
 require "securerandom"
 require "cache/coalescer/version"
 require "cache/coalescer/lock"
@@ -20,7 +21,7 @@ module Cache
       value = store.read(key)
       return value unless value.nil?
 
-      lock_client ||= Lock.default_for(store)
+      lock_client ||= store.respond_to?(:redis) ? Lock.default_for(store) : Lock::InMemoryLock.new
       lock_key = lock_key_for(key)
       token = SecureRandom.uuid
 
@@ -78,4 +79,4 @@ module Cache
   end
 end
 
-require "cache/coalescer/railtie" if defined?(Rails)
+require "cache/coalescer/railtie"
