@@ -2,9 +2,12 @@
 
 [![Gem Version](https://img.shields.io/gem/v/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
 [![Gem Downloads](https://img.shields.io/gem/dt/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
+[![Gem Downloads (Monthly)](https://img.shields.io/gem/dm/cache-coalescer.svg)](https://rubygems.org/gems/cache-coalescer)
+[![Ruby](https://img.shields.io/badge/ruby-3.0%2B-cc0000.svg)](https://www.ruby-lang.org)
 [![CI](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Elysium-Arc/cache-coalescer/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/Elysium-Arc/cache-coalescer.svg)](https://github.com/Elysium-Arc/cache-coalescer/releases)
 [![Rails](https://img.shields.io/badge/rails-6.x%20%7C%207.x%20%7C%208.x-cc0000.svg)](https://rubyonrails.org)
+[![Elysium Arc](https://img.shields.io/badge/Elysium%20Arc-Reliability%20Toolkit-0b3d91.svg)](https://github.com/Elysium-Arc)
 
 Distributed singleflight for Rails cache misses to prevent stampedes on cold keys.
 
