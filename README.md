@@ -2,7 +2,18 @@
 
 Distributed singleflight for Rails cache misses to prevent stampedes on cold keys.
 
-## Install
+## About
+Cache Coalescer ensures only one request computes a missing value while the rest wait for it. The first caller acquires a lock, computes, and writes to cache. Other callers poll briefly and reuse the result. Optional stale values can be served if the lock is held for too long.
+
+This is ideal for expensive cache-miss work such as API calls, report generation, or heavyweight database queries.
+
+## Compatibility
+- Ruby 3.0+
+- ActiveSupport 6.1+
+- Works with any ActiveSupport cache store
+- Best with Redis-backed stores for distributed locking
+
+## Installation
 ```ruby
 # Gemfile
 
@@ -22,12 +33,16 @@ Rails.cache.fetch_coalesced("expensive-key", ttl: 60) { ExpensiveQuery.call }
 ```
 
 ## Options
-- `ttl`: cache TTL in seconds
-- `lock_ttl`: lock expiry (seconds)
-- `wait_timeout`: how long waiters poll for a result
-- `stale_ttl`: optional stale window; if set, stale values are returned on timeout
-- `store`: any ActiveSupport cache store
-- `lock_client`: Redis client or `Cache::Coalescer::Lock::InMemoryLock`
+- `ttl` (Integer) cache TTL in seconds
+- `lock_ttl` (Integer) lock expiry in seconds
+- `wait_timeout` (Float) how long waiters poll for a result
+- `wait_sleep` (Float) polling interval in seconds
+- `stale_ttl` (Integer) optional stale window; if set, stale values are returned on timeout
+- `store` ActiveSupport cache store (defaults to `Rails.cache` when available)
+- `lock_client` Redis client or `Cache::Coalescer::Lock::InMemoryLock`
+
+## Locking
+If the cache store exposes `redis`, a Redis lock is used automatically. Otherwise, the gem falls back to an in-memory lock which is safe for single-process usage.
 
 ## Release
 ```bash
