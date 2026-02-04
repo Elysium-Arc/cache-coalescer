@@ -59,6 +59,7 @@ Rails.cache.fetch_coalesced("expensive-key", ttl: 60) { ExpensiveQuery.call }
 - `wait_timeout` (Float) how long waiters poll for a result
 - `wait_sleep` (Float) polling interval in seconds
 - `stale_ttl` (Integer) optional stale window; if set, stale values are returned on timeout
+- `cache_nil` (Boolean) store nil values to avoid re-computation
 - `store` ActiveSupport cache store (defaults to `Rails.cache` when available)
 - `lock_client` Redis client or `Cache::Coalescer::Lock::InMemoryLock`
 
