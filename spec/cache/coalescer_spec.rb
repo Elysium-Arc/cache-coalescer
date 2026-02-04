@@ -43,6 +43,25 @@ class CoalescerSpecStore
   end
 end
 
+class CountingStore
+  attr_reader :writes
+
+  def initialize
+    @data = {}
+    @writes = 0
+  end
+
+  def read(key)
+    @data[key]
+  end
+
+  def write(key, value, expires_in: nil)
+    @data[key] = value
+    @writes += 1
+    true
+  end
+end
+
 RSpec.describe Cache::Coalescer do
   it "raises when no store is available" do
     expect { described_class.default_store }.to raise_error(Cache::Coalescer::Error)
@@ -68,6 +87,50 @@ RSpec.describe Cache::Coalescer do
     result = described_class.fetch("key", ttl: 1, store: store) { "new" }
 
     expect(result).to eq("value")
+  end
+
+  it "caches nil values when cache_nil is enabled" do
+    store = CountingStore.new
+    calls = 0
+
+    first = described_class.fetch("key", ttl: 1, store: store, cache_nil: true) do
+      calls += 1
+      nil
+    end
+    second = described_class.fetch("key", ttl: 1, store: store, cache_nil: true) {}
+
+    expect(first).to be_nil
+    expect(second).to be_nil
+    expect(calls).to eq(1)
+    expect(store.writes).to eq(1)
+  end
+
+  it "returns cached nil even when cache_nil is not passed later" do
+    store = CountingStore.new
+
+    described_class.fetch("key", ttl: 1, store: store, cache_nil: true) { nil }
+
+    value = described_class.fetch("key", ttl: 1, store: store) {}
+
+    expect(value).to be_nil
+    expect(store.writes).to eq(1)
+  end
+
+  it "does not cache nil when cache_nil is false" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    calls = 0
+
+    described_class.fetch("key", ttl: 1, store: store) do
+      calls += 1
+      nil
+    end
+
+    described_class.fetch("key", ttl: 1, store: store) do
+      calls += 1
+      nil
+    end
+
+    expect(calls).to eq(2)
   end
 
   it "uses default store in fetch when store is nil" do
@@ -139,6 +202,22 @@ RSpec.describe Cache::Coalescer do
     expect(result).to eq("value")
   end
 
+  it "returns cached nil when it appears while waiting" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    lock = Class.new do
+      def acquire(*_args) = false
+      def release(*_args); end
+    end.new
+
+    Thread.new do
+      sleep 0.02
+      store.write("key", Cache::Coalescer::NULL_VALUE)
+    end
+
+    result = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.1, cache_nil: true) { "new" }
+    expect(result).to be_nil
+  end
+
   it "returns stale value when lock is held and stale_ttl is set" do
     store = ActiveSupport::Cache::MemoryStore.new
     lock = Cache::Coalescer::Lock::InMemoryLock.new
@@ -150,6 +229,17 @@ RSpec.describe Cache::Coalescer do
     value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, stale_ttl: 60, &fresh_block)
 
     expect(value).to eq("stale")
+  end
+
+  it "returns stale nil when stale key stores nil sentinel" do
+    store = ActiveSupport::Cache::MemoryStore.new
+    lock = Cache::Coalescer::Lock::InMemoryLock.new
+    lock.acquire(Cache::Coalescer.lock_key_for("key"), "token", 1)
+    store.write(Cache::Coalescer.stale_key_for("key"), Cache::Coalescer::NULL_VALUE)
+
+    value = described_class.fetch("key", ttl: 1, store: store, lock_client: lock, wait_timeout: 0.01, stale_ttl: 60) { "value" }
+
+    expect(value).to be_nil
   end
 
   it "returns nil when stale_ttl is set but no stale value exists" do
@@ -188,7 +278,7 @@ RSpec.describe Cache::Coalescer do
   it "skips lock release when lock_client is nil" do
     store = ActiveSupport::Cache::MemoryStore.new
 
-    value = described_class.compute_and_store(store, "key", 1, nil, nil, "lock", "token") { "value" }
+    value = described_class.compute_and_store(store, "key", 1, nil, nil, "lock", "token", false) { "value" }
 
     expect(value).to eq("value")
     expect(store.read("key")).to eq("value")
